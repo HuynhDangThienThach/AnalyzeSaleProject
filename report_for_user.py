@@ -1,4 +1,6 @@
 import tkinter as tk
+from tkinter import font as tkfont
+from PIL import Image, ImageTk 
 from tkinter import filedialog, messagebox
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -14,33 +16,56 @@ class SalesAnalyzer:
         
         self.filepath = ""
         
-        # Create frame for buttons
-        self.function_frame = tk.Frame(self.root, bg="#f0f0f0")
+        # Create frame for buttons with a custom background color
+        self.function_frame = tk.Frame(self.root, bg="#4F5D73")
         self.function_frame.pack(side=tk.LEFT, fill=tk.Y)
         
+        # Define font styles
+        button_font = tkfont.Font(family='Helvetica', size=10, weight='bold')
+        
+        # Define button style
+        button_style = {
+            "font": button_font,
+            "bg": "#6C8EBF",  # Background color of the buttons
+            "fg": "white",  # White text color
+            "bd": 1,  # Thin border
+            "relief": tk.RAISED,
+            "width": 20,
+            "height": 2,
+        }
+        
         # Create buttons
-        self.load_button = tk.Button(self.function_frame, text="Chọn tệp dữ liệu", command=self.load_file)
+        self.load_button = tk.Button(self.function_frame, text="Chọn tệp dữ liệu", command=self.load_file, **button_style)
         self.load_button.pack(pady=10, padx=20)
         
-        self.analyze_button = tk.Button(self.function_frame, text="Bắt đầu phân tích", command=self.analyze_data)
+        self.analyze_button = tk.Button(self.function_frame, text="Bắt đầu phân tích", command=self.analyze_data, **button_style)
         self.analyze_button.pack(pady=10, padx=20)
         
+        # Dropdown menu for plot options
         self.plot_option = tk.StringVar()
         self.plot_option.set("Doanh thu theo tháng")
         self.plot_option_menu = tk.OptionMenu(self.function_frame, self.plot_option, "Doanh thu theo tháng", "Doanh thu theo thành phố", "Số đơn hàng theo giờ", "Top 10 Combo sản phẩm được bán cùng nhau nhiều nhất", "Biểu đồ số lượng đơn hàng và giá của mỗi sản phẩm")
+        self.plot_option_menu.config(**button_style)
         self.plot_option_menu.pack(pady=10, padx=20)
-
-        self.plot_button = tk.Button(self.function_frame, text="Vẽ biểu đồ", command=self.plot_data)
+        
+        self.plot_button = tk.Button(self.function_frame, text="Vẽ biểu đồ", command=self.plot_data, **button_style)
         self.plot_button.pack(pady=10, padx=20)
-
-        self.save_button = tk.Button(self.function_frame, text="Xuất PDF", command=self.save_pdf)
+        
+        self.save_button = tk.Button(self.function_frame, text="Xuất PDF", command=self.save_pdf, **button_style)
         self.save_button.pack(pady=10, padx=20)
         
-        self.clear_button = tk.Button(self.function_frame, text="Xóa biểu đồ", command=self.clear_plot)
+        self.clear_button = tk.Button(self.function_frame, text="Xóa biểu đồ", command=self.clear_plot, **button_style)
         self.clear_button.pack(pady=10, padx=20)
         
-        # Create frame for plot
-        self.plot_frame = tk.Frame(self.root, bg="#f0f0f0")
+        # Add a logo below the last button
+        logo_image = Image.open("logoTruongN.png")  # Replace with your uploaded logo path
+        logo_image = logo_image.resize((200, 200), Image.Resampling.LANCZOS)  # Adjust size as needed
+        self.logo = ImageTk.PhotoImage(logo_image)
+        self.logo_label = tk.Label(self.function_frame, image=self.logo, bg='#ffffff')
+        self.logo_label.pack(side=tk.BOTTOM, pady=20)
+        
+        # Create frame for plot with white background
+        self.plot_frame = tk.Frame(self.root, bg="white")
         self.plot_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
         
         # Create figure and canvas for plot
@@ -51,7 +76,7 @@ class SalesAnalyzer:
         self.canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
         
         self.df = None
-        
+
     def load_file(self):
         self.filepath = filedialog.askopenfilename(filetypes=[("CSV files", "*.csv")])
         if self.filepath:
@@ -129,34 +154,50 @@ class SalesAnalyzer:
             height = bar.get_height()
             self.ax.text(bar.get_x() + bar.get_width() / 2, height + 50, f'{height:.2f}', ha='center', va='bottom', fontsize=8, color='blue')
         self.canvas.draw()
-    
+
     def plot_sales_by_city(self):
         df = self.df
         sales_value_city = df.groupby('City').count()['Sales']
         cities = sales_value_city.index.tolist()
-        self.ax.bar(x=cities, height=sales_value_city, color='skyblue', edgecolor='black', width=0.4)
+        colors = ['skyblue', 'pink']
+        self.ax.bar(x=cities, height=sales_value_city, color=colors, edgecolor='black', width=0.4)
         self.ax.set_xticks(cities)
         self.ax.set_xticklabels(cities, rotation=45, ha='right')
         self.ax.set_xlabel('Thành phố', fontsize=12)
         self.ax.set_ylabel('Doanh thu (USD)', fontsize=12)
         self.ax.set_title('Doanh thu theo thành phố', fontsize=14, fontweight='bold')
         self.ax.grid(axis='y', linestyle='--', alpha=0.7)
-        for bar in self.ax.patches:
+
+        for i, bar in enumerate(self.ax.patches):
             height = bar.get_height()
             self.ax.text(bar.get_x() + bar.get_width() / 2, height + 50, f'{height:.2f}', ha='center', va='bottom', fontsize=8, color='blue')
-        self.canvas.draw()
+
+        # Add annotation
+        self.ax.annotate('Thấp hơn', xy=(cities[7], sales_value_city[7]), xytext=(0.6, 10),
+                    arrowprops=dict(arrowstyle='->', color='black', connectionstyle='arc3,rad=-0.2'),
+                    fontsize=10, bbox=dict(boxstyle='round,pad=0.3', fc='lightblue', ec='black'))
+
+        self.canvas.draw()    
 
     def plot_sales_by_hour(self):
         df = self.df
         sales_value_hours = df.groupby('Hours').count()['Sales']
         hours = sales_value_hours.index.tolist()
-        self.ax.bar(hours, sales_value_hours, color='skyblue')
+        
+        # Create an area plot with transparency
+        self.ax.fill_between(hours, sales_value_hours, color='orange', alpha=0.4)
+        self.ax.plot(hours, sales_value_hours, color='black', linewidth=0.7)
+        # Setting labels and title
         self.ax.set_xticks(hours)
         self.ax.set_xlabel('Giờ', fontsize=14)
         self.ax.set_ylabel('Số đơn hàng', fontsize=14)
         self.ax.set_title('Số đơn hàng theo giờ', fontsize=16, fontweight='bold')
+        
+        # Adding grid lines
         self.ax.grid(axis='y', linestyle='--', alpha=0.7)
+        
         self.canvas.draw()
+
 
     def plot_products_sold_together(self):
         df = self.df
@@ -164,14 +205,29 @@ class SalesAnalyzer:
         df_dup['All Product'] = df_dup.groupby('Order ID')['Product'].transform(lambda x: ', '.join(x))
         df_dup = df_dup[['Order ID', 'All Product']].drop_duplicates()
         product_combo = df_dup['All Product'].value_counts().head(10)
-        self.ax.bar(product_combo.index, product_combo.values, color='skyblue', edgecolor='black')
-        self.ax.set_xticks(range(len(product_combo)))
-        self.ax.set_xticklabels(product_combo.index, rotation=45, ha='right')
+        
+        # Convert the bar plot to a step plot
+        x = range(len(product_combo))
+        y = product_combo.values
+        
+        # Create the step plot
+        self.ax.step(x, y, where='mid', color='skyblue', linewidth=2, alpha=0.7)
+        
+        # Mark data points with a scatter plot for better visibility
+        self.ax.scatter(x, y, color='black', zorder=3)
+        
+        # Setting labels and title
+        self.ax.set_xticks(x)
+        self.ax.set_xticklabels(product_combo.index, rotation=45, ha='right', fontsize=10)
         self.ax.set_xlabel('Combo sản phẩm', fontsize=14)
         self.ax.set_ylabel('Số lượng', fontsize=14)
         self.ax.set_title('Top 10 Combo sản phẩm được bán cùng nhau nhiều nhất', fontsize=16, fontweight='bold')
+        
+        # Adding grid lines
         self.ax.grid(axis='y', linestyle='--', alpha=0.7)
+        
         self.canvas.draw()
+
     
     def plot_most_sold_products(self):
         df = self.df
